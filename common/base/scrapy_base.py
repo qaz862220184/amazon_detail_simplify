@@ -44,6 +44,8 @@ class SpiderBase(Spider, ABC):
             self.params = json.loads(params)
         else:
             raise SystemException('Parameter parsing error')
+        print('-'*200)
+        print(self.params)
         if ApiSign.ver_sign(self.params) is False:
             raise SystemException('Signature verification fails')
         # 获取子任务和主任务
@@ -314,16 +316,20 @@ class SpiderBase(Spider, ABC):
             options['errback'] = self.errback
         return PyppeteerRequest(url, **options)
 
-    def form_request(self, url, **options):
+    def form_request(self, url, params, **options):
         """
         form表单
         :param url:
+        :param params:
         :param options:
         :return:
         """
         if not url or '://' not in url:
             # 抛出异常
             raise ValueError('The request url format is incorrect')
+        # 请求参数解析
+        if params:
+            url = f'{url}?{urlencode(params)}'
         if 'errback' not in options:
             options['errback'] = self.errback
         return Request(url, **options)

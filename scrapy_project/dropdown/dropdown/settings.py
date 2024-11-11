@@ -17,6 +17,11 @@ NEWSPIDER_MODULE = "dropdown.spiders"
 import sys
 sys.path.append("../")
 sys.path.append("../..")
+from common.helpers import get_absolute_path
+from common.env import ENV
+
+# 节点id
+NODE_ID = ENV.find_env('NODE_ID')
 # from common.helpers import get_absolute_path
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -38,10 +43,13 @@ CONCURRENT_REQUESTS = 6
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = True
-COOKIES_DEBUG = True
-COOKIES_PERSISTENCE = True
-COOKIES_PERSISTENCE_DIR = 'cookies'
-COOKIES_STORAGE = 'common.core.downloader.cookies.storage.in_memory.InMemoryStorage'
+COOKIES_ENABLE = True
+COOKIES_PERSISTENCE_DIR = get_absolute_path('runtime/cookies')
+# COOKIES_ENABLED = True
+# COOKIES_DEBUG = True
+# COOKIES_PERSISTENCE = True
+# COOKIES_PERSISTENCE_DIR = 'cookies'
+# COOKIES_STORAGE = 'common.core.downloader.cookies.storage.in_memory.InMemoryStorage'
 
 # Disable Telnet Console (enabled by default)
 # TELNETCONSOLE_ENABLED = False
@@ -72,10 +80,9 @@ DOWNLOADER_MIDDLEWARES = {
 
     # 自定义中间件
     'dropdown.middlewares.DropdownProxyMiddleware': 97,
-    'common.core.downloader.headers.HeaderMiddleware': 98,
     'dropdown.middlewares.DropdownCookiesMiddleware': 99,
-    'dropdown.middlewares.DropdownDownloaderMiddleware': 100,
-    'dropdown.middlewares.DropdownRetryMiddleware': 101,
+    'dropdown.middlewares.DropdownRetryMiddleware': 100,
+    'dropdown.middlewares.DropdownSocks5Middleware': 101,
 
     # selenium 中间件
     # 'common.core.downloader.scrapy_pyppeteer.NewPyppeteerMiddleware': 800,

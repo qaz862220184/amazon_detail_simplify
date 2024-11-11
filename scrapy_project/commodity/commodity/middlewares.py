@@ -5,17 +5,22 @@
 
 # from scrapy import signals
 # useful for handling different item types with a single interface
+import logging
 from tool.request.cookies.change_address import AmazonLocationSession
 from tool.request.proxys.vps_proxies import VpsProxiesTactic
 from scrapy.utils.project import get_project_settings
 from common.core.downloader.headers.request_headers import RefererParam
 from common.exceptions.exception import RequestException, CookieException
-from common.core.downloader.scrapy_pyppeteer import PyppeteerCookiesMiddleware
 from common.base.scrapy_base import CommoditySpiderBase
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from tool.response.verify_response import VerifyResponse
-import nest_asyncio
-nest_asyncio.apply()
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+from scrapy.http import TextResponse as ScrapyResponse
+from common.core.downloader.cookies import BaseCookiesMiddleware
+from fake_useragent import UserAgent
+
+logger = logging.getLogger()
+ua = UserAgent()
 
 
 class CommodityProxyMiddleware:
@@ -25,7 +30,6 @@ class CommodityProxyMiddleware:
     def __init__(self):
         settings = get_project_settings()
         self.node_id = settings["NODE_ID"]
-        self.count = settings["SWITCHING_FREQUENCY"]
         self.network_business_id = settings['BUSINESS_ID']
 
     def process_request(self, request, spider):
@@ -39,8 +43,6 @@ class CommodityProxyMiddleware:
         request.meta.update({"network_line_id": network_line_id})
         uuid = result.get('uuid')
         spider.uuid = uuid
-        # VPN代理切换方式
-        VpsProxiesTactic.change_vpn(self.count, network_line_id)
         # cookie 使用线路id和邮编进行区分
         zip_code = spider.subtask_handle_data.get('zip_code')
         cookie_name = str(network_line_id) + '_' + str(zip_code)
@@ -55,25 +57,27 @@ class CommodityRefererMiddleware(object):
     referer 中间件
     """
     def process_request(self, request, spider):
+        logger.debug('advertising.middlewares.AdvertisingRefererMiddleware is start!!!')
         country = spider.subtask_handle_data.get('country_code')
         keyword = spider.subtask_handle_data.get('asin')
         referer = RefererParam.get_referer(country, keyword)
         request.meta.update({'referer': referer})
+        logger.debug('advertising.middlewares.AdvertisingRefererMiddleware is done!!!')
 
 
-class CommodityCookiesMiddleware(PyppeteerCookiesMiddleware):
+class CommodityCookiesMiddleware(BaseCookiesMiddleware):
     """
     cookie 中间件
     """
 
-    def init_cookies(self, request, spider, storage):
+    def init_cookies(self, request, spider):
+        logger.debug('advertising.middlewares.AdvertisingCookiesMiddleware is start!!!')
         if isinstance(spider, CommoditySpiderBase):
             proxies = request.meta.get('proxies')
+            proxies = {'https': proxies}
             amazon = AmazonLocationSession(
-                domain=spider.get_country_site(),
+                country=spider.get_country('code'),
                 zip_code=spider.subtask_handle_data.get('zip_code'),
-                language=spider.get_language(),
-                chrome_executable_path=self.settings.get('CHROME_SERVER_EXECUTE_PATH'),
                 proxies=proxies,
             )
             cookies = amazon.change_address()
@@ -82,11 +86,33 @@ class CommodityCookiesMiddleware(PyppeteerCookiesMiddleware):
                 if network_line_id:
                     VpsProxiesTactic.change_vpn(0, network_line_id)
                 raise CookieException('address is not change', error_type='address')
+            print('*'*200)
+            print(cookies)
             self.send_cookies(
                 cookies=cookies,
-                storage=storage,
                 request=request
             )
+        logger.debug('advertising.middlewares.AdvertisingCookiesMiddleware is done!!!')
+
+
+class CommodityHeadersMiddleware(object):
+    """
+    请求头中间件
+    """
+
+    def process_request(self, request, spider):
+        logger.debug('Commodity.middlewares.CommodityHeadersMiddleware is start!!!')
+        request.headers.update({'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7'})
+        request.headers.update({'accept-language': 'en-US,en;q=0.9'})
+        request.headers.update({'priority': 'u=0, i'})
+        request.headers.update({'sec-fetch-dest': 'document'})
+        request.headers.update({'sec-fetch-mode': 'navigate'})
+        request.headers.update({'sec-fetch-site': 'none'})
+        request.headers.update({'sec-fetch-user': '?1'})
+        request.headers.update({'upgrade-insecure-requests': '1'})
+        # 这里改成使用随机的ua
+        request.headers.update({'user-agent': ua.chrome})
+        logger.debug('Commodity.middlewares.CommodityHeadersMiddleware is done!!!')
 
 
 class CommodityRetryMiddleware(RetryMiddleware):
@@ -95,7 +121,6 @@ class CommodityRetryMiddleware(RetryMiddleware):
         super().__init__(settings)
         self.settings = settings
         self.node_id = settings["NODE_ID"]
-        self.count = settings["SWITCHING_FREQUENCY"]
 
     def process_response(self, request, response, spider):
         """
@@ -104,9 +129,6 @@ class CommodityRetryMiddleware(RetryMiddleware):
         if request.meta.get("dont_retry", False):
             return response
 
-        # 线路id
-        network_line_id = request.meta.get("network_line_id")
-
         # 响应内容验证对象
         verify_response = VerifyResponse(
             response=response
@@ -114,14 +136,12 @@ class CommodityRetryMiddleware(RetryMiddleware):
 
         if verify_response.status != 200:
             # 亚马逊返回请求状态错误
-            VpsProxiesTactic.lock_to_change_vpn(network_line_id=network_line_id, change_type=2)
             if verify_response.status == 404:
                 raise RequestException(f'The listing is not exist')
             raise RequestException(f'Request status code is error [{response.status}]')
 
         if verify_response.is_dog_page() or verify_response.is_validate_captcha():
             # 出现狗页面 或者 出现验证码页面
-            VpsProxiesTactic.lock_to_change_vpn(network_line_id=network_line_id, change_type=2)
             raise RequestException(f'Trigger the anti-claw mechanism')
 
         # 判断是否为listing不存在的页面
@@ -131,16 +151,16 @@ class CommodityRetryMiddleware(RetryMiddleware):
 
         if verify_response.is_error_page() or verify_response.is_blank_page():
             # 页面错误【浏览器无响应导致无内容 或 浏览器超时 或 空白页面】
-            VpsProxiesTactic.lock_to_change_vpn(network_line_id=network_line_id, change_type=2)
             raise RequestException('the page response is error!')
 
         # 判断地址是否存在 subtask_handle_data
         if verify_response.is_not_address(spider.subtask_handle_data.get('country_code'),
                                           spider.subtask_handle_data.get('zip_code')):
-            PyppeteerCookiesMiddleware.delete_cookies(
-                cookies={},
-                storage=request.meta['cookieStorageObj'],
-            )
+            # cookie 信息里面没有带上地址信息
+            if 'cookies_jar' in request.meta:
+                request.meta['cookies_jar'].delete_cookies(
+                    cookies={}
+                )
             raise CookieException('The address is lose, proxy is {}'.format(request.meta['current']),
                                   error_type='address')
 
@@ -155,3 +175,22 @@ class CommodityRetryMiddleware(RetryMiddleware):
             isinstance(exception, self.EXCEPTIONS_TO_RETRY) and not request.meta.get('dont_retry', False)
         ):
             return self._retry(request, exception, spider)
+
+
+class CommoditySocks5Middleware(HTTPDownloadHandler):
+    """
+    将请求代理改成使用socks5
+    """
+    def process_request(self, request, spider):
+        headers_dict = {k.decode(): v[0].decode() if v else '' for k, v in request.headers.items()}
+        proxies = request.meta.get('proxy')
+        proxies = {'https': proxies, 'http': proxies}
+        response = request.get(request.url, headers=headers_dict, proxies=proxies)
+        response = ScrapyResponse(
+            url=request.url,
+            status=response.status_code,
+            headers=request.headers,
+            body=response.content,
+            request=request
+        )
+        return response

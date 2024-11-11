@@ -18,7 +18,7 @@ class DetailSpider(CommoditySpiderBase):
         :param args:
         :param kwargs:
         """
-
+        params = 'eyJzdWJfdGFza19pZCI6ICI2NTlmOTY3MWRkMDUwMDAwYmQwMDY4ZGIiLCAidGFza19pZCI6ICI2NTlmOTZiNWRkMDUwMDAwYmQwMDY4ZGMiLCAidGltZSI6IDE3MDQ5MDQ5NzUuNzY3NSwgInNpZ24iOiAiN2QwMThiMDc4OGE1NWZkNTI3ZjJiODA3YWYwNGQ3ODMifQ=='
         super().__init__(params, *args, **kwargs)
         # 请求参数
         # 参数部分要另外处理
@@ -28,7 +28,7 @@ class DetailSpider(CommoditySpiderBase):
             raise ValueError("The asin does not exist")
 
     def start_requests(self):
-        yield self.http_get(
+        yield self.form_request(
             url=self.get_request_url(),
             params={
                 "keywords": f"{self.asin} a"
@@ -52,8 +52,8 @@ class DetailSpider(CommoditySpiderBase):
         """
         return f"https://{self.get_country_site()}/dp/{self.asin}"
 
-    # def execute_success_call(self):
-    #     pass
-    #
-    # def execute_error_call(self, exception):
-    #     pass
+    def execute_success_call(self):
+        pass
+
+    def execute_error_call(self, exception):
+        pass

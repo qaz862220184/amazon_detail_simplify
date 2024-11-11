@@ -6,13 +6,17 @@
 # from scrapy import signals
 
 # useful for handling different item types with a single interface
-from scrapy import signals
-from common.core.downloader.cookies import ScrapyCookiesMiddleware
-from common.exceptions.exception import RequestException
+import requests
+from tool.request.cookies.change_address import AmazonLocationSession
+from common.exceptions.exception import RequestException, CookieException
+from common.base.scrapy_base import CommoditySpiderBase
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from tool.response.verify_response import VerifyResponse
 from scrapy.utils.project import get_project_settings
 from tool.request.proxys.vps_proxies import VpsProxiesTactic
+from common.core.downloader.cookies import BaseCookiesMiddleware
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+from scrapy.http import TextResponse as ScrapyResponse
 
 
 class DropdownProxyMiddleware:
@@ -38,67 +42,31 @@ class DropdownProxyMiddleware:
         # TODO 在这里调用请求端口的方法
         proxies = VpsProxiesTactic.get_line_proxies(network_line_id)
         request.meta.update({"proxies": proxies})
-        # request.meta['proxy'] = proxies
 
 
-class DropdownCookiesMiddleware(ScrapyCookiesMiddleware):
+class DropdownCookiesMiddleware(BaseCookiesMiddleware):
     """
     cookie 中间件
     """
-    # 必须的cookie
-    must_cookie = []
 
     def init_cookies(self, request, spider):
-        cookies = {}
-        return cookies
-
-
-class DropdownDownloaderMiddleware:
-    # Not all methods need to be defined. If a method is not defined,
-    # scrapy acts as if the downloader middleware does not modify the
-    # passed objects.
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
-        return s
-
-    def process_request(self, request, spider):
-        # Called for each request that goes through the downloader
-        # middleware.
-
-        # Must either:
-        # - return None: continue processing this request
-        # - or return a Response object
-        # - or return a Request object
-        # - or raise IgnoreRequest: process_exception() methods of
-        #   installed downloader middleware will be called
-        return None
-
-    def process_response(self, request, response, spider):
-        # Called with the response returned from the downloader.
-
-        # Must either;
-        # - return a Response object
-        # - return a Request object
-        # - or raise IgnoreRequest
-
-        return response
-
-    def process_exception(self, request, exception, spider):
-        # Called when a download handler or a process_request()
-        # (from other downloader middleware) raises an exception.
-
-        # Must either:
-        # - return None: continue processing this exception
-        # - return a Response object: stops process_exception() chain
-        # - return a Request object: stops process_exception() chain
-        pass
-
-    def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        if isinstance(spider, CommoditySpiderBase):
+            proxies = request.meta.get('proxies')
+            amazon = AmazonLocationSession(
+                country=spider.get_country('code'),
+                zip_code=spider.subtask_handle_data.get('zip_code'),
+                proxies=proxies,
+            )
+            cookies = amazon.change_address()
+            if not cookies:
+                network_line_id = request.meta.get("network_line_id")
+                if network_line_id:
+                    VpsProxiesTactic.change_vpn(0, network_line_id)
+                raise CookieException('address is not change', error_type='address')
+            self.send_cookies(
+                cookies=cookies,
+                request=request
+            )
 
 
 class DropdownRetryMiddleware(RetryMiddleware):
@@ -140,3 +108,24 @@ class DropdownRetryMiddleware(RetryMiddleware):
             isinstance(exception, self.EXCEPTIONS_TO_RETRY) and not request.meta.get("dont_retry", False)
         ):
             return self._retry(request, exception, spider)
+
+
+class DropdownSocks5Middleware(HTTPDownloadHandler):
+    """
+    将请求代理改成使用socks5
+    """
+
+    def process_request(self, request, spider):
+        headers_dict = {k.decode(): v[0].decode() if v else '' for k, v in request.headers.items()}
+        proxies = request.meta.get('proxy')
+        proxies = {'https': proxies, 'http': proxies}
+        response = requests.get(request.url, headers=headers_dict, proxies=proxies)
+        response = ScrapyResponse(
+            url=request.url,
+            status=response.status_code,
+            headers=request.headers,
+            body=response.content,
+            request=request,
+        )
+
+        return response

@@ -37,7 +37,7 @@ class KeywordSpider(DropdownSpiderBase):
         请求参数设置
         :return:
         """
-        yield self.http_get(
+        yield self.form_request(
             url=self.get_request_url(),
             params={
                 'limit': self.page,

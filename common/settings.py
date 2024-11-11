@@ -18,27 +18,27 @@ DB_MYSQL_CONF = {
 # mongodbpython
 DB_MONGODB_CONF = {
     # 线上
-    "task": {
-            "uri": "mongodb://common_service:{}@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=common_service".format(parse.quote("juhui-common-service@juhui.com")),
-            "database": "common_service",
-            "prefix": 'jh_',
-        },
-    "brand": {
-            "uri": "mongodb://general_scraper:juhui-general-scraper.com@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=general_scraper",
-            "database": "general_scraper",
-            "prefix": 'jh_',
-        },
-    # 本地
     # "task": {
-    #             "uri": "mongodb://192.168.3.211:27017",
-    #             "database": "common_service",
-    #             "prefix": 'jh_',
-    #         },
+    #         "uri": "mongodb://common_service:{}@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=common_service".format(parse.quote("juhui-common-service@juhui.com")),
+    #         "database": "common_service",
+    #         "prefix": 'jh_',
+    #     },
     # "brand": {
-    #             "uri": "mongodb://192.168.3.211:27017",
-    #             "database": "general_scraper",
-    #             "prefix": 'jh_',
-    #         },
+    #         "uri": "mongodb://general_scraper:juhui-general-scraper.com@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=general_scraper",
+    #         "database": "general_scraper",
+    #         "prefix": 'jh_',
+    #     },
+    # 本地
+    "task": {
+                "uri": "mongodb://192.168.13.211:27017",
+                "database": "common_service",
+                "prefix": 'jh_',
+            },
+    "brand": {
+                "uri": "mongodb://192.168.13.211:27017",
+                "database": "general_scraper",
+                "prefix": 'jh_',
+            },
 
 }
 

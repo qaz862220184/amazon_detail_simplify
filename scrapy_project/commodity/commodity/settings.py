@@ -48,6 +48,7 @@ ROBOTSTXT_OBEY = False
 
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = True
+COOKIES_ENABLE = True
 COOKIES_PERSISTENCE_DIR = get_absolute_path('runtime/cookies')
 
 # Disable Telnet Console (enabled by default)
@@ -79,12 +80,11 @@ DOWNLOADER_MIDDLEWARES = {
 
     # 自定义中间件
     'commodity.middlewares.CommodityProxyMiddleware': 98,
-    'common.core.downloader.scrapy_pyppeteer.ChromeServerMiddleware': 99,
     'commodity.middlewares.CommodityCookiesMiddleware': 100,
     'commodity.middlewares.CommodityRetryMiddleware': 101,
     'commodity.middlewares.CommodityRefererMiddleware': 102,
-    # selenium中间件
-    'common.core.downloader.scrapy_pyppeteer.NewPyppeteerMiddleware': 800,
+    'commodity.middlewares.CommodityHeadersMiddleware': 103,
+    'commodity.middlewares.CommoditySocks5Middleware': 800,
 }
 
 # Enable or disable extensions

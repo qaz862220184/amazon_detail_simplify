@@ -51,9 +51,10 @@ class DropdownCookiesMiddleware(BaseCookiesMiddleware):
 
     def init_cookies(self, request, spider):
         if isinstance(spider, CommoditySpiderBase):
-            proxies = request.meta.get('proxies')
+            proxies = request.meta.get('proxy')
+            proxies = {'https': proxies}
             amazon = AmazonLocationSession(
-                country=spider.get_country('code'),
+                country=spider.subtask_handle_data.get('country_code'),
                 zip_code=spider.subtask_handle_data.get('zip_code'),
                 proxies=proxies,
             )

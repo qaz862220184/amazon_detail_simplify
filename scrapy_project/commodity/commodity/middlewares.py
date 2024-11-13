@@ -71,8 +71,8 @@ class CommodityCookiesMiddleware(BaseCookiesMiddleware):
             proxies = request.meta.get('proxy')
             proxies = {'https': proxies}
             amazon = AmazonLocationSession(
-                country=spider.get_country('code'),
-                zip_code=spider.get_subtask('zip_code'),
+                country=spider.subtask_handle_data.get('country_code'),
+                zip_code=spider.subtask_handle_data.get('zip_code'),
                 proxies=proxies,
             )
             cookies = amazon.change_address()
@@ -146,11 +146,6 @@ class CommodityRetryMiddleware(RetryMiddleware):
         # 判断地址是否存在 subtask_handle_data
         if verify_response.is_not_address(spider.subtask_handle_data.get('country_code'),
                                           spider.subtask_handle_data.get('zip_code')):
-            # cookie 信息里面没有带上地址信息
-            if 'cookies_jar' in request.meta:
-                request.meta['cookies_jar'].delete_cookies(
-                    cookies={}
-                )
             raise CookieException('The address is lose, proxy is {}'.format(request.meta['current']),
                                   error_type='address')
 

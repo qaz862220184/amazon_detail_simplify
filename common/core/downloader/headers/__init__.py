@@ -1,7 +1,8 @@
-from common.core.downloader.headers.request_headers import (
+from common.core.downloader.headers.request_headers import  (
     RequestParam
 )
 from scrapy.http.headers import Headers
+
 
 
 class HeaderMiddleware:

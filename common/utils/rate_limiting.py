@@ -135,7 +135,6 @@ class RequestLimiting:
         return self.redis.hset(name=rule_key, mapping=default)
 
 
-
 class RequestRatioLimiting:
 
     def __init__(self, exec_ratio, non_exec_ratio):
@@ -188,8 +187,6 @@ class RequestRatioLimiting:
         if value > 1:
             raise ValueError('The value of the ratio cannot be greater than 1')
         return value
-
-
 
 
 if __name__ == '__main__':

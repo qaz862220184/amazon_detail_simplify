@@ -1,4 +1,4 @@
-from _collections_abc import MutableMapping
+from collections import MutableMapping
 
 
 class BaseStorage(MutableMapping):

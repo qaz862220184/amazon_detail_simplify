@@ -29,6 +29,16 @@ class ENV(object):
 
         load_dotenv()
 
+    @classmethod
+    def is_debug(cls):
+        """
+        判断是否为开发环境
+        """
+        env = cls.find_env('ENV')
+        if env == 'debug':
+            return True
+        return False
+
 
 if __name__ == '__main__':
     ENV.update_env("COMPUTER_UUID", "45ea0ce1-d1a4-4c97-9028-7b6c6137796f")

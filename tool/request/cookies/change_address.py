@@ -5,7 +5,6 @@ import json
 import requests
 import urllib3
 import sys
-
 sys.path.append('..')
 sys.path.append('../..')
 sys.path.append('../../..')
@@ -31,19 +30,19 @@ class DESAdapter(HTTPAdapter):
     """
     指纹中间件
     """
-
+    
     def __init__(self, *args, **kwargs):
         """
         A TransportAdapter that re-enables 3DES support in Requests.
-        :param args:
-        :param kwargs:
+        :param args: 
+        :param kwargs: 
         """
         ciphers = ORIGIN_CIPHERS.split(':')
         random.shuffle(ciphers)
         ciphers = ':'.join(ciphers)
         self.CIPHERS = ciphers + ':!aNULL:!eNULL:!MD5'
         super().__init__(*args, **kwargs)
-
+        
     def init_poolmanager(self, *args, **kwargs):
         context = create_urllib3_context(ciphers=self.CIPHERS)
         kwargs['ssl_context'] = context
@@ -96,8 +95,8 @@ class AmazonLocationSession(object):
         else:
             self._update_cookie(response)
         # TODO
-        with open('amazon_test.html', 'w') as f:
-            f.write(response.text)
+        # with open('amazon_test.html', 'w') as f:
+        #     f.write(response.text)
 
         # 解析和获取csrf-token
         csrf_token = self.parse_csrf_token(response)
@@ -272,7 +271,8 @@ class AmazonLocationSession(object):
             url=url,
             headers=headers,
             proxies=self.proxies,
-            cookies=cookie
+            cookies=cookie,
+            timeout=20
         )
         if ValidateCaptcha.is_verification(response.text):
             # 出现验证码，说明需要验证

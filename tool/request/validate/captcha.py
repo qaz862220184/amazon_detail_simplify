@@ -1,5 +1,3 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
 import requests
 import random
 import time
@@ -66,7 +64,7 @@ class SourceDownload:
         if not url:
             return None
         try:
-            response = SourceDownload.get(url, )
+            response = SourceDownload.get(url)
         except Exception:
             return None
         # 响应结果

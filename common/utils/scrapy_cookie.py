@@ -285,7 +285,6 @@ class ScrapyCookieManage(object):
             mode='w'
         )
 
-
     def __make_scrapy_cookie(self, cookie, is_filter=True):
         """
         创建cookie对象

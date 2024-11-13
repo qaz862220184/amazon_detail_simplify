@@ -84,8 +84,6 @@ DOWNLOADER_MIDDLEWARES = {
     'dropdown.middlewares.DropdownRetryMiddleware': 100,
     'dropdown.middlewares.DropdownSocks5Middleware': 101,
 
-    # selenium ÖÐ¼ä¼þ
-    # 'common.core.downloader.scrapy_pyppeteer.NewPyppeteerMiddleware': 800,
 }
 
 # Enable or disable extensions

@@ -1,6 +1,5 @@
 
 
-
 class JhBaseException(Exception):
     """
     异常父类
@@ -60,7 +59,7 @@ class RequestException(JhBaseException):
 
 class TimeoutException(JhBaseException):
     _type = 'timeout-exception'
-    
+
 
 class ConfiguredException(JhBaseException):
     _type = 'configured-exception'

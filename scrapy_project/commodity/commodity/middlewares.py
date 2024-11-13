@@ -3,40 +3,37 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-# from scrapy import signals
-# useful for handling different item types with a single interface
 import logging
 from tool.request.cookies.change_address import AmazonLocationSession
-from tool.request.proxys.vps_proxies import VpsProxiesTactic
-from scrapy.utils.project import get_project_settings
-from common.core.downloader.headers.request_headers import RefererParam
+from common.core.downloader.cookies import BaseCookiesMiddleware
 from common.exceptions.exception import RequestException, CookieException
-from common.base.scrapy_base import CommoditySpiderBase
+from common.core.downloader.headers.request_headers import RefererParam
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from tool.response.verify_response import VerifyResponse
+from common.base.scrapy_base import CommoditySpiderBase
+from scrapy.utils.project import get_project_settings
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.http import TextResponse as ScrapyResponse
-from common.core.downloader.cookies import BaseCookiesMiddleware
+from tool.request.proxys.vps_proxies import VpsProxiesTactic
 from fake_useragent import UserAgent
 
 logger = logging.getLogger()
 ua = UserAgent()
 
 
-class CommodityProxyMiddleware:
+class CommodityProxyMiddleware(object):
     """
     代理中间件
     """
     def __init__(self):
         settings = get_project_settings()
-        self.node_id = settings["NODE_ID"]
         self.network_business_id = settings['BUSINESS_ID']
 
     def process_request(self, request, spider):
         country_code = spider.subtask_handle_data.get('country_code')
         area_type = spider.subtask_handle_data.get('area_type')
 
-        # 获取的道道来历线路id
+        # 获取得到线路id
         result = VpsProxiesTactic.change_vpn_line(self.network_business_id, country_code, area_type)
         network_line_id = result.get('network_line_id')
         spider.network_line_id = network_line_id
@@ -66,33 +63,25 @@ class CommodityRefererMiddleware(object):
 
 
 class CommodityCookiesMiddleware(BaseCookiesMiddleware):
-    """
-    cookie 中间件
-    """
 
     def init_cookies(self, request, spider):
-        logger.debug('advertising.middlewares.AdvertisingCookiesMiddleware is start!!!')
+        print('commodity.middlewares.CommodityCookiesMiddleware is start!!!')
         if isinstance(spider, CommoditySpiderBase):
-            proxies = request.meta.get('proxies')
+            proxies = request.meta.get('proxy')
             proxies = {'https': proxies}
             amazon = AmazonLocationSession(
                 country=spider.get_country('code'),
-                zip_code=spider.subtask_handle_data.get('zip_code'),
+                zip_code=spider.get_subtask('zip_code'),
                 proxies=proxies,
             )
             cookies = amazon.change_address()
             if not cookies:
-                network_line_id = request.meta.get("network_line_id")
-                if network_line_id:
-                    VpsProxiesTactic.change_vpn(0, network_line_id)
                 raise CookieException('address is not change', error_type='address')
-            print('*'*200)
-            print(cookies)
             self.send_cookies(
                 cookies=cookies,
                 request=request
             )
-        logger.debug('advertising.middlewares.AdvertisingCookiesMiddleware is done!!!')
+        print('commodity.middlewares.CommodityCookiesMiddleware is done!!!')
 
 
 class CommodityHeadersMiddleware(object):
@@ -102,7 +91,8 @@ class CommodityHeadersMiddleware(object):
 
     def process_request(self, request, spider):
         logger.debug('Commodity.middlewares.CommodityHeadersMiddleware is start!!!')
-        request.headers.update({'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7'})
+        request.headers.update({
+                                   'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.7'})
         request.headers.update({'accept-language': 'en-US,en;q=0.9'})
         request.headers.update({'priority': 'u=0, i'})
         request.headers.update({'sec-fetch-dest': 'document'})
@@ -120,7 +110,6 @@ class CommodityRetryMiddleware(RetryMiddleware):
     def __init__(self, settings):
         super().__init__(settings)
         self.settings = settings
-        self.node_id = settings["NODE_ID"]
 
     def process_response(self, request, response, spider):
         """

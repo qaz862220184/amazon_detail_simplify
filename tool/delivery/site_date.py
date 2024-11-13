@@ -27,13 +27,16 @@ class BaseDelivery(object):
         delivery_date = {'free': None, 'fastest': None}
         free_date = self.delivery_date.get('free')
         fastest_date = self.delivery_date.get('fastest')
-        if free_date:
-            # 定义一个方法去匹配
-            free_days = self.delivery_rule_match(free_date, country)
-            delivery_date['free'] = free_days
-        if fastest_date:
-            fastest_days = self.delivery_rule_match(fastest_date, country)
-            delivery_date['fastest'] = fastest_days
+        try:
+            if free_date:
+                # 定义一个方法去匹配
+                free_days = self.delivery_rule_match(free_date, country)
+                delivery_date['free'] = free_days
+            if fastest_date:
+                fastest_days = self.delivery_rule_match(fastest_date, country)
+                delivery_date['fastest'] = fastest_days
+        except:
+            pass
         return delivery_date
 
     def delivery_rule_match(self, date_str, country):
@@ -63,9 +66,8 @@ class BaseDelivery(object):
                 utc_date = utc_time.date()
                 # 计算相差时间
                 delivery_days = (this_date - utc_date).days
-                # 判断一下日期是否为负数，若是则将年份+1
                 if delivery_days < 0:
-                    this_date = datetime.date(this_year + 1, months, days)
+                    this_date = datetime.date(this_year+1, months, days)
                     delivery_days = (this_date - utc_date).days
 
             return delivery_days
@@ -78,7 +80,12 @@ class BaseDelivery(object):
         :params months
         """
         month_map = SiteMonth.get_months_map(country)
-        this_month = month_map.get(months)
+        this_month = None
+        # TODO 这里使用正则匹配一下key
+        # this_month = month_map.get(months)
+        for key in month_map:
+            if re.match('^{}'.format(months), key):
+                this_month = month_map.get(key)
         return this_month
 
 
@@ -104,7 +111,7 @@ class DeDelivery(BaseDelivery):
         else:
             # 将日期转为datetime.date格式
             if '-' in date_str.lower():
-                new_date_str = date_str.split('-')[1].strip()
+                new_date_str = date_str.split('-')[-1].strip()
                 days, months = new_date_str.split(' ')
             else:
                 new_date_str = date_str.split(',')[1].strip()
@@ -118,7 +125,6 @@ class DeDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -157,7 +163,6 @@ class GbDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -187,7 +192,7 @@ class FrDelivery(BaseDelivery):
                 months = new_date_str[-1]
             else:
                 week, days, months = date_str.split(' ')
-            months = self.get_month(months.strip(), country)
+                months = self.get_month(months.strip(), country)
             days = int(days.split('-')[0].strip().replace('.', ''))
             this_year = datetime.datetime.now().year
             this_date = datetime.date(this_year, months, days)
@@ -196,7 +201,6 @@ class FrDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -234,7 +238,6 @@ class EsDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -274,7 +277,6 @@ class ItDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -313,7 +315,6 @@ class PlDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -352,7 +353,6 @@ class SeDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -369,7 +369,7 @@ class CaDelivery(BaseDelivery):
 
 class JpDelivery(BaseDelivery):
     """
-    瑞典站
+    日本站
     """
     def delivery_rule_match(self, date_str, country):
         """
@@ -388,22 +388,22 @@ class JpDelivery(BaseDelivery):
                 new_date_str = date_str.split(' ')
                 days = new_date_str[0]
                 months = new_date_str[-1]
+                months = self.get_month(months.strip(), country)
+                days = int(days.split('-')[0].strip().replace('.', ''))
+                this_year = datetime.datetime.now().year
             else:
                 # 这个使用正则匹配一下
-                rule_days = re.findall(r'(\d+)日', date_str)
-                rule_months = re.findall(r'(\d+月)', date_str)
-                days = rule_days[0] if rule_days else None
-                months = rule_months[0] if rule_months else None
-            months = self.get_month(months.strip(), country)
-            days = int(days.split('-')[0].strip().replace('.', ''))
-            this_year = datetime.datetime.now().year
-            this_date = datetime.date(this_year, months, days)
+                the_date = re.findall(r'(\d+/\d+/\d+)', date_str)
+                the_date = the_date[0] if the_date else None
+                if not the_date:
+                    return None
+                this_year, months, days = the_date.split('/')
+            this_date = datetime.date(int(this_year), int(months), int(days))
             # 获取对应站点的对应时间
             utc_time = self.get_site_time(country)
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -442,7 +442,6 @@ class SgDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -481,7 +480,6 @@ class NlDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -536,7 +534,6 @@ class AeDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -587,7 +584,6 @@ class TrDelivery(BaseDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -625,7 +621,6 @@ class BrDelivery(EsDelivery):
             utc_date = utc_time.date()
             # 计算相差时间
             delivery_days = (this_date - utc_date).days
-            # 判断一下日期是否为负数，若是则将年份+1
             if delivery_days < 0:
                 this_date = datetime.date(this_year + 1, months, days)
                 delivery_days = (this_date - utc_date).days
@@ -669,15 +664,15 @@ class Delivery:
 
 
 if __name__ == '__main__':
-    # o = Delivery('DE', {
-    #     "free": "31 August - 2 September",
-    #     "fastest": "Morgen, 19. August"
-    # })
-
-    o = Delivery('US', {
-        "free": "Monday, September 11",
-        "fastest": "Tomorrow, September 6"
+    o = Delivery('DE', {
+        'fastest': None,
+        'free': '3 - 5 Apr '
     })
+
+    # o = Delivery('US', {
+    #     "free": "Monday, September 11",
+    #     "fastest": "Tomorrow, September 6"
+    # })
 
     # o = Delivery('FR', {
     #     "free": "vendredi 18 août",

@@ -1,6 +1,6 @@
 import pymysql
 from common.settings import DB_MYSQL_CONF
-
+from common.core.query.sub_meter import SubMeterQuery
 
 
 class MysqlDb:
@@ -9,19 +9,57 @@ class MysqlDb:
 
     @classmethod
     def set_db(cls, db):
-        cls.db = db
+        if db:
+            cls.db = db
 
     @classmethod
     def table(cls, table, db=None):
-        if db is None:
-            db = cls.db
-        return Query(table, cls.database(db), cls.get_config(db))
+        """
+        获取一个数据库对象
+        :param table:
+        :param db:
+        :return:
+        """
+        cls.set_db(db)
+        return Query(table, cls._database(), cls._get_config())
 
     @classmethod
-    def database(cls, db):
+    def sub_table(cls, table, cycle, db=None):
+        """
+        获取一个分库的数据对象
+        :param table:
+        :param cycle:
+        :param db:
+        :return:
+        """
+        tables = cls.get_sub_tables(
+            table,
+            cycle,
+            0
+        )
+        return cls.table(tables[0], db)
+
+    @classmethod
+    def get_sub_tables(cls, table, cycle, along_day):
+        """
+        获取分库的表名称
+        :param table:
+        :param cycle:
+        :param along_day:
+        :return:
+        """
+        subMeterQuery = SubMeterQuery(
+            table,
+            cycle,
+            along_day
+        )
+        return subMeterQuery.get_tables()
+
+    @classmethod
+    def _database(cls):
         # 数据库连接
-        if db in cls.pool:
-            conn = cls.pool[db]
+        if cls.db in cls.pool:
+            conn = cls.pool[cls.db]
             try:
                 res = conn.ping()
                 if 'ok' in res and res['ok']:
@@ -29,9 +67,9 @@ class MysqlDb:
             except Exception:
                 # 说明断线
                 pass
-        config = cls.get_config(db)
+        config = cls._get_config()
         # 新建一个数据库连接
-        cls.pool[db] = pymysql.connect(
+        cls.pool[cls.db] = pymysql.connect(
             host=config['host'],
             port=config['port'],
             user=config['user'],
@@ -40,18 +78,17 @@ class MysqlDb:
             charset=config['charset'],
             cursorclass=config['cursor_class']
         )
-        return cls.pool[db]
+        return cls.pool[cls.db]
 
     @classmethod
-    def get_config(cls, db):
+    def _get_config(cls):
         """
         获取配置
-        :param db:
         :return:
         """
-        if db not in DB_MYSQL_CONF:
-            raise ValueError('The mongo configuration does not exist:' + db)
-        config = DB_MYSQL_CONF[db]
+        if cls.db not in DB_MYSQL_CONF:
+            raise ValueError('The mongo configuration does not exist:' + cls.db)
+        config = DB_MYSQL_CONF[cls.db]
         return config
 
     def close(self):
@@ -106,6 +143,17 @@ class Query:
         """
         return self.cursor
 
+    def insert_get_id(self, data):
+        """
+        插入并获取插入id
+        :param data:
+        :return:
+        """
+        res = self.insert(data)
+        if res:
+            return self.cursor.lastrowid
+        return 0
+
     def insert(self, data):
         """
         插入
@@ -120,6 +168,43 @@ class Query:
         db_field = str(tuple(db_field)).replace("'", '')
         sql = """ insert into %s %s values %s """ % (self.get_table_name(), db_field, data_values)
         return self.exec(sql, data_tuple)
+
+    def insert_all(self, data):
+        """
+        插入所有
+        """
+        fields = None
+        values_format = None
+        values = []
+        for item in data:
+            if not fields:
+                # 字段
+                fields = item.keys()
+                fields = str(tuple(fields)).replace("'", '')
+                # 值
+                values_format = "(" + "%s," * (len(item)) + ")"
+                values_format = values_format.replace(',)', ')')
+            # 值
+            item_tuple = tuple(item.values())
+            values.append(
+                item_tuple
+            )
+
+        if fields and values_format and values:
+            # 批量插入
+            sql = "INSERT INTO {} {} VALUES {}".format(
+                self.get_table_name(),
+                str(fields),
+                str(values_format)
+            )
+            try:
+                status = self.cursor.executemany(sql, values)
+                self.conn.commit()
+            except Exception as exception:
+                self.conn.rollback()
+                raise exception
+            return status
+        return 0
 
     def update(self, data):
         """

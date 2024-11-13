@@ -1,7 +1,7 @@
 from scrapy.utils.project import get_project_settings
+from common.core.mongodb.mongo import MongoDb
 from common.helpers import get_value
 from common.utils.cache import Chcaed
-from common.core.mongodb.mongo import MongoDb
 from bson.objectid import ObjectId
 from datetime import datetime
 
@@ -24,16 +24,19 @@ class ScrapyConfig:
 
 
 class Config:
+
     @classmethod
     def get_country(cls, key=None):
         """
         获取国家数据
+        :param key:
+        :return:
         """
         data_key = 'country_data_key'
         country = Chcaed.get(data_key)
         if country is None:
             country = {}
-            result = MongoDb.table('scrapy_country', 'task').find({'status': {'$eq': 1}})
+            result = MongoDb.table('scrapy_country').find({'status': {'$eq': 1}})
             if result:
                 for item in result:
                     for filed in item:

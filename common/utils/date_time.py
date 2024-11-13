@@ -1,6 +1,7 @@
 import time
 import pytz
 from datetime import datetime
+from datetime import date
 
 
 class CountryDateTimeManage(object):
@@ -160,16 +161,43 @@ class ScrapyDateTimeManage:
         )
         return us_time.astimezone(to_zone)
 
+    @classmethod
+    def strtotime(cls, date):
+        """
+        日期转化成时间戳
+        :param date:
+        :return:
+        """
+        if ':' in date:
+            _format = '%Y-%m-%d %H:%M:%S'
+        else:
+            _format = '%Y-%m-%d'
+        # 将日期字符串转换为datetime对象
+        date_obj = datetime.strptime(date, _format)
+        # 将datetime对象转换为时间戳
+        return datetime.timestamp(date_obj)
+
+    @classmethod
+    def date_for_timestamp(cls, timestamp, _format="%Y-%m-%d %H:%M:%S"):
+        """
+        日期转时间戳
+        :param timestamp:
+        :param _format:
+        :return:
+        """
+        date = datetime.fromtimestamp(timestamp)
+        return date.strftime(_format)
+
+    @classmethod
+    def calculate_week_number(cls, year, month, day):
+        date_obj = date(year, month, day)
+        first_day = date_obj.replace(month=1, day=1)
+        delta = date_obj - first_day
+        days = delta.days
+        week_number = days // 7 + 1
+        return week_number
+
 
 if __name__ == '__main__':
-    res = ScrapyDateTimeManage.date_time('CN').date_time()
-    print(res)
-    # default_format = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # print(default_format)
-    data = ScrapyDateTimeManage.date_transform(res, "%Y-%m-%d %H:%M:%S", 'CN', 'UTC')
-    print(data, type(data))
-
-    res1 = ScrapyDateTimeManage.date_time().utc_time()
-    print(res1)
-    # data = ScrapyDateTimeManage.date_transform(res1, "%Y-%m-%d %H:%M:%S", 'UTC', 'CN')
-    # print(data, type(data))
+    res = ScrapyDateTimeManage.date_time().utc_time()
+    print(res, type(res))

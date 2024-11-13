@@ -7,22 +7,38 @@ class RedisDb:
     """
     redis连接池
     """
-    def __init__(self):
-        # redis连接池
-        self.pool = redis.ConnectionPool(
-            host=DB_REDIS_CONF['host'],
-            port=DB_REDIS_CONF['port'],
-            db=DB_REDIS_CONF['db'],
-            max_connections=DB_REDIS_CONF['max_connections'],
-            ** DB_REDIS_CONF['connection_kwargs'],
-        )
+    db = 'default'
 
-    def get_redis(self):
+    @classmethod
+    def set_db(cls, db):
+        if db:
+            cls.db = db
+        else:
+            cls.db = 'default'
+
+    @classmethod
+    def get_redis_pool(cls):
+        # redis连接池
+        redis_conf = DB_REDIS_CONF[cls.db]
+        if not redis_conf:
+            raise ValueError('redis config is not exist!')
+        pool = redis.ConnectionPool(
+            host=redis_conf['host'],
+            port=redis_conf['port'],
+            db=redis_conf['db'],
+            password=redis_conf['password'],
+            max_connections=redis_conf['max_connections'],
+            ** redis_conf['connection_kwargs'],
+        )
+        return pool
+
+    def get_redis(self, db):
         """
         获取redis客户端
         :return:
         """
-        return redis.Redis(connection_pool=self.pool)
+        self.set_db(db)
+        return redis.Redis(connection_pool=self.get_redis_pool())
 
 
 class RedisClient:
@@ -32,8 +48,8 @@ class RedisClient:
     RedisPool = RedisDb()
 
     @classmethod
-    def redis(cls):
-        return cls.RedisPool.get_redis()
+    def redis(cls, db=None):
+        return cls.RedisPool.get_redis(db)
 
     def __call__(self, *args, **kwargs):
         """

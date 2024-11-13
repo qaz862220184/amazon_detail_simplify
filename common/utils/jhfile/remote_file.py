@@ -11,7 +11,6 @@ from common.utils.encryption import Md5Encrytion
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 
-
 class KodBoxBase:
     # https://blog.51cto.com/u_15057832/4400634
     # https://doc.kodcloud.com/v2/#/explorer/file?id=_15-%e6%96%87%e4%bb%b6%e4%b8%8a%e4%bc%a0
@@ -256,7 +255,6 @@ class FileManage(KodBoxBase):
             current_chunk = current_chunk + 1
 
         return res
-
 
     def user_share_edit(
             self,

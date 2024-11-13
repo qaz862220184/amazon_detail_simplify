@@ -16,7 +16,7 @@ class KeywordSpider(DropdownSpiderBase):
         # 调用父类
         # params = 'eyJzdWJfdGFza19pZCI6ICI2NGEzN2E2NTg3NTMwYjBiOTFjMWQzNmMiLCAidGFza19pZCI6ICI2NGEzN2E2NTg3NTMwYjBiOTFjMWQzNmIiLCAidGltZSI6IDE2ODg0MzUzMDEsICJzaWduIjogImJhYzgwOTJmOWYwMWE0MDg3ZWJmMWUxYzI0OGYxZGI5In0='
         # 没有数据的
-        # params = 'eyJzdWJfdGFza19pZCI6ICI2NGEzOGE5MTgwNWQ4NjViMDY1NGI3YmUiLCAidGFza19pZCI6ICI2NGEzOGE5MTgwNWQ4NjViMDY1NGI3YmQiLCAidGltZSI6IDE2ODg0MzUzMDEsICJzaWduIjogIjc1M2VkZThlZjA0ZjE1NmQzODAxMjM5MmE4MjNiN2Q2In0='
+        # params = 'eyJzdWJfdGFza19pZCI6ICI2NjExZjBiYmMwZDVmYjA4NGUwN2Q4NjMiLCAidGFza19pZCI6ICI2NjExZjBiYmMwZDVmYjA4NGUwN2Q4NjIiLCAidGltZSI6IDE3MDQ5MDQ5NzUuNzY3NSwgInNpZ24iOiAiZTViNmY4NTYzMzJlYjdhZDQyNWY3MWFjZDliZjE1NTkifQ=='
         super(KeywordSpider, self).__init__(params, *args, **kwargs)
 
         handle_data = self.subtask_handle_data

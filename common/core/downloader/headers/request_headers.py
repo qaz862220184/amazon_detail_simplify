@@ -367,7 +367,7 @@ class RefererParam:
     @classmethod
     def get_referer(cls, country_code, keyword):
         """
-        返回 随机referer
+        返回referer
         :param country_code:
         :param keyword:
         """
@@ -376,3 +376,4 @@ class RefererParam:
         referer = random.choice(referer_list)
         referer = referer.replace('keyword', quote(keyword))
         return referer
+

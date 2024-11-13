@@ -1,7 +1,8 @@
 # -*- coding: UTF-8 -*-
 import requests
+import random
 from common.utils.cache import Chcaed
-from common.utils.jhvps.vpn_proxy_api import LineProxy
+from common.utils.jhvps.vpn_proxy_api import LineProxy, logger
 from common.utils.distribution_lock import RedisLock
 from common.settings import CENTRES
 from common.exceptions.exception import ProxyException
@@ -42,16 +43,28 @@ class VpsProxiesTool(object):
         :param change_type:
         :return:
         """
-        identifier = cls.lock.acquire_lock(
+        lock = RedisLock(
+            lock_name='change_vpn',
+            lock_timeout=30,
+            db='client'
+        )
+        identifier = lock.acquire_lock(
             acquire_timeout=cls.lock_time
         )
         try:
-            vpn_name = LineProxy().change_vpn_resource(network_line_id, vpn, change_type)
+            # TODO 在这里添加一下时间的判断， 在redis中存储一个10分钟过期的key
+            key_name = str(network_line_id) + '_used'
+            change_tag = Chcaed.get(key_name, db='client')
+            if change_tag:
+                return 'default'
+            Chcaed.put(key_name, True, 300, db='client')
+            vpn_name = LineProxy().change_vpn_resource(LineProxy.get_network_line_id(), vpn, change_type)
+            cls.set_vpn_stochastic_restrictions(network_line_id)
             return vpn_name
         except Exception as e:
             raise ProxyException("change vpn resource is error! error is {}".format(e), error_type='vps')
         finally:
-            cls.lock.release_lock(
+            lock.release_lock(
                 identifier=identifier
             )
 
@@ -62,7 +75,7 @@ class VpsProxiesTool(object):
         :return:
         """
         redis_key = '{}_vps_vpn_name'.format(network_line_id)
-        return Chcaed.get(redis_key)
+        return Chcaed.get(redis_key, db='client')
 
     @classmethod
     def set_vpn_name(cls, network_line_id, vpn_name):
@@ -73,7 +86,7 @@ class VpsProxiesTool(object):
         :return:
         """
         redis_key = '{}_vps_vpn_name'.format(network_line_id)
-        return Chcaed.put(redis_key, vpn_name)
+        return Chcaed.put(redis_key, vpn_name, db='client')
 
     @classmethod
     def get_vpn_use_count(cls, network_line_id):
@@ -82,7 +95,7 @@ class VpsProxiesTool(object):
         :return:
         """
         redis_key = '{}_vpn_use_count'.format(network_line_id)
-        return Chcaed.get(redis_key)
+        return Chcaed.get(redis_key, db='client')
 
     @classmethod
     def set_vpn_use_count(cls, use_count, network_line_id):
@@ -91,7 +104,24 @@ class VpsProxiesTool(object):
         :return:
         """
         redis_key = '{}_vpn_use_count'.format(network_line_id)
-        return Chcaed.put(redis_key, use_count)
+        return Chcaed.put(redis_key, use_count, db='client')
+
+    @classmethod
+    def get_vpn_stochastic_restrictions(cls, network_line_id):
+        """
+        获取当前vpn的随机限制数量
+        """
+        redis_key = '{}_vpn_stochastic_restrictions'.format(network_line_id)
+        return Chcaed.get(redis_key, db='client')
+
+    @classmethod
+    def set_vpn_stochastic_restrictions(cls, network_line_id):
+        """
+        获取当前vpn的随机限制数量
+        """
+        redis_key = '{}_vpn_stochastic_restrictions'.format(network_line_id)
+        stochastic_restrictions = random.randint(100, 200)
+        return Chcaed.put(redis_key, stochastic_restrictions, db='client')
 
 
 class VpsProxiesTactic(VpsProxiesTool):
@@ -106,30 +136,33 @@ class VpsProxiesTactic(VpsProxiesTool):
         :param change_type:
         :return:
         """
+        # Step 1: 检查线路状态
         VpsProxiesTool.check_line()
-        # 判断是否短时间内达到一定错误
+        # Step 2： 检查错误状态和获取VPN状态
         error_status = Chcaed.get('{}_errors'.format(network_line_id))
-        # 判断是否是第一次运行
         vpn_name = VpsProxiesTool.get_vpn_name(network_line_id)
+        # Step 3：没有vpn名称（第一次运行）或者强制切换或者有错误状态，切换vpn
         if not vpn_name or 2 == change_type or error_status:
-            Chcaed.get_driver().delete('errors')
+            Chcaed.get_driver().delete('errors')  # 删除错误状态
             vpn_name = VpsProxiesTool.change_vpn_resource(network_line_id, vpn, change_type)
-            VpsProxiesTool.set_vpn_name(network_line_id, vpn_name)
-            VpsProxiesTool.set_vpn_use_count(0, network_line_id)
+            VpsProxiesTool.set_vpn_name(network_line_id, vpn_name)  # 更新vpn名称
+            VpsProxiesTool.set_vpn_use_count(0, network_line_id)  # 更新vpn计数
             return True
-        # 判断是否达到要切换的次数
+        # Step 4： 获取vpn的使用次数
         use_count = VpsProxiesTool.get_vpn_use_count(network_line_id)
+        if use_count is None:
+            use_count = 0
+        # Step 5： 获取随机的代理切换上限，不存在则设为200（第一次运行）
+        count = VpsProxiesTool.get_vpn_stochastic_restrictions(network_line_id)
+        if count is None:
+            count = 200
+        # Step 6： 判断是否达到切换次数
         if use_count >= count:
-            VpsProxiesTool.set_vpn_use_count(0, network_line_id)
+            VpsProxiesTool.set_vpn_use_count(0, network_line_id)  # 重置使用次数
             vpn_name = VpsProxiesTool.change_vpn_resource(network_line_id, vpn, change_type)
-            # vpn name 使用旧的
-            if vpn_name == 'local' and VpsProxiesTool.get_vpn_name(network_line_id):
-                vpn_name = VpsProxiesTool.get_vpn_name(network_line_id)
-                # 切换vpn返回602时，次数减10
-                use_count = use_count - 10
-                VpsProxiesTool.set_vpn_use_count(use_count, network_line_id)
             VpsProxiesTool.set_vpn_name(network_line_id, vpn_name)
             return True
+        # Step 7： 增加线路使用次数并更新
         use_count = use_count + 1
         VpsProxiesTool.set_vpn_use_count(use_count, network_line_id)
         return True
@@ -151,8 +184,8 @@ class VpsProxiesTactic(VpsProxiesTool):
         return True
 
     @classmethod
-    def change_vpn_line(cls, business_id=None, country=None, area_type=None):
-        data = LineProxy().change_vpn_line(business_id, country, area_type)
+    def change_vpn_line(cls, business_id=None, country=None, area_type=None, frequency_time=10):
+        data = LineProxy().change_vpn_line(business_id, country, area_type, frequency_time)
         return data
 
     @classmethod
@@ -168,7 +201,9 @@ class VpsProxiesTactic(VpsProxiesTool):
         if 'code' in res and res['code'] == 200:
             port = res['data'].get('port')
             proxies = '{}:{}'.format(CENTRES['address'], port)
+            logger.debug('get proxy is done!!! proxy is {}'.format(proxies))
             return proxies
+        logger.debug('get proxy is done!!!')
         raise ValueError('the network_line_id not have corresponding port!!! network_line_id is {}'.format(line_id))
 
     @classmethod

@@ -6,11 +6,11 @@ from common.core.redisdb.redis_pool import RedisClient
 
 class RedisLock:
 
-    def __init__(self, lock_name, conn=None, lock_timeout=60):
+    def __init__(self, lock_name, conn=None, lock_timeout=60, db='default'):
         self.lock_name = lock_name
         self.lock_timeout = lock_timeout
         if not conn:
-            conn = RedisClient.redis()
+            conn = RedisClient.redis(db)
         self.conn = conn
 
     def acquire_lock(self, acquire_timeout=5, lock_timeout=None):

@@ -44,8 +44,6 @@ class SpiderBase(Spider, ABC):
             self.params = json.loads(params)
         else:
             raise SystemException('Parameter parsing error')
-        print('-'*200)
-        print(self.params)
         if ApiSign.ver_sign(self.params) is False:
             raise SystemException('Signature verification fails')
         # 获取子任务和主任务
@@ -432,7 +430,7 @@ class DropdownSpiderBase(SpiderBase, ABC):
 
 
 if __name__ == '__main__':
-    params = {"sub_task_id": "659f9671dd050000bd0068db", "task_id": "659f96b5dd050000bd0068dc", "time": 1704904975.7675}
+    params = {"sub_task_id": "6611f0bbc0d5fb084e07d863", "task_id": "6611f0bbc0d5fb084e07d862", "time": 1704904975.7675}
     sign = ApiSign.create_sign(params)
     params = dict(params, **{"sign": sign})
 

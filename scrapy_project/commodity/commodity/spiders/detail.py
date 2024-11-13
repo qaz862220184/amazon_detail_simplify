@@ -1,8 +1,7 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
 import sys
-sys.path.append("..")
-sys.path.append("../..")
+sys.path.append('..')
+sys.path.append('../..')
+sys.path.append('../../..')
 from ..items import CommodityItem
 from tool.extract.detail.detail_extract import Extract
 from common.base.scrapy_base import CommoditySpiderBase
@@ -18,7 +17,7 @@ class DetailSpider(CommoditySpiderBase):
         :param args:
         :param kwargs:
         """
-        params = 'eyJzdWJfdGFza19pZCI6ICI2NTlmOTY3MWRkMDUwMDAwYmQwMDY4ZGIiLCAidGFza19pZCI6ICI2NTlmOTZiNWRkMDUwMDAwYmQwMDY4ZGMiLCAidGltZSI6IDE3MDQ5MDQ5NzUuNzY3NSwgInNpZ24iOiAiN2QwMThiMDc4OGE1NWZkNTI3ZjJiODA3YWYwNGQ3ODMifQ=='
+        # params = 'eyJzdWJfdGFza19pZCI6ICI2NTlmOTY3MWRkMDUwMDAwYmQwMDY4ZGIiLCAidGFza19pZCI6ICI2NTlmOTZiNWRkMDUwMDAwYmQwMDY4ZGMiLCAidGltZSI6IDE3MDQ5MDQ5NzUuNzY3NSwgInNpZ24iOiAiN2QwMThiMDc4OGE1NWZkNTI3ZjJiODA3YWYwNGQ3ODMifQ=='
         super().__init__(params, *args, **kwargs)
         # 请求参数
         # 参数部分要另外处理

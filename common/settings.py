@@ -1,16 +1,18 @@
 import pymysql
 from urllib import parse
-
+from common.helpers import get_absolute_path
+from common.env import ENV
 # mysqldb
 DB_MYSQL_CONF = {
    "default": {
-       "host": "127.0.0.1",
-       "user": "inventory",
-       "passwd": "hwFccnZDRWzJtd75",
-       "db": "inventory",
-       "charset": "utf8",
-       "port": 3306,
-       "prefix": 'is_',
+       # "host": "localhost",
+       "host": "192.168.2.153",  # 183.90.82.115
+       "user": "networkline",  # networkline
+       "passwd": "btV3%^ts",  # btV3%^ts
+       "db": "networkline",
+       "charset": "utf8mb4",
+       "port": 58699,  # 58699
+       "prefix": 'jh_',
        "cursor_class": pymysql.cursors.DictCursor,
    },
 }
@@ -18,39 +20,61 @@ DB_MYSQL_CONF = {
 # mongodbpython
 DB_MONGODB_CONF = {
     # 线上
-    # "task": {
-    #         "uri": "mongodb://common_service:{}@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=common_service".format(parse.quote("juhui-common-service@juhui.com")),
-    #         "database": "common_service",
-    #         "prefix": 'jh_',
-    #     },
-    # "brand": {
-    #         "uri": "mongodb://general_scraper:juhui-general-scraper.com@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=general_scraper",
-    #         "database": "general_scraper",
-    #         "prefix": 'jh_',
-    #     },
-    # 本地
+    "default": {
+            "uri": "mongodb://common_service:{}@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=common_service".format(parse.quote("juhui-common-service@juhui.com")),
+            "database": "common_service",
+            "prefix": 'jh_',
+        },
     "task": {
-                "uri": "mongodb://192.168.13.211:27017",
-                "database": "common_service",
-                "prefix": 'jh_',
-            },
+            "uri": "mongodb://common_service:{}@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=common_service".format(parse.quote("juhui-common-service@juhui.com")),
+            "database": "common_service",
+            "prefix": 'jh_',
+        },
     "brand": {
-                "uri": "mongodb://192.168.13.211:27017",
-                "database": "general_scraper",
-                "prefix": 'jh_',
-            },
-
+            "uri": "mongodb://general_scraper:juhui-general-scraper.com@192.168.2.48:27017/?authMechanism=DEFAULT&authSource=general_scraper",
+            "database": "general_scraper",
+            "prefix": 'jh_',
+        },
+    # 本地
+    # "default": {
+    #     "uri": "mongodb://192.168.13.211:27017",
+    #     "database": "common_service",
+    #     "prefix": 'jh_',
+    # },
+    # "task": {
+    #             "uri": "mongodb://192.168.13.211:27017",
+    #             "database": "common_service",
+    #             "prefix": 'jh_',
+    #         },
+    # "brand": {
+    #             "uri": "mongodb://192.168.13.211:27017",
+    #             "database": "general_scraper",
+    #             "prefix": 'jh_',
+    #         },
 }
 
 # redisdb
 DB_REDIS_CONF = {
-    "host": "127.0.0.1",
-    "port": 6379,
-    "db": 0,
-    "max_connections": 10,
-    "connection_kwargs": {
-        "decode_responses": True,
+    "default": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "db": 0,
+        "max_connections": 10,
+        "password": "",
+        "connection_kwargs": {
+            "decode_responses": True,
+        },
     },
+    "client": {
+        "host": "192.168.2.16",
+        "port": 6379,
+        "db": 0,
+        "max_connections": 10,
+        "password": "5tG9!kL3",
+        "connection_kwargs": {
+            "decode_responses": True,
+        },
+    }
 }
 
 # cache
@@ -62,7 +86,7 @@ CACHE_CONF = {
 # message
 MESSAGE_CONF = {
     # 接口地址
-    "api": 'http://192.168.2.17:9501/api/v1',
+    "api": 'http://192.168.2.50:9501/api/v1',
     # "api":'http://127.0.0.1:9501/api/v1',
     # 接口秘钥
     'apikey': 'hEI/qDhna7kL400WgZ91vDCPsbCPWCLLDwvxNrClmQg=',
@@ -89,17 +113,15 @@ CRAWL_RESULT_CALL_CONF = {
     # 测试环境
     '1': {
         'enable': True,
-        'api': 'https://192.168.2.216/api/scrapy/crontab_task/callback',
-        # 'api': 'http://192.168.2.61/api/scrapy/crontab_task/callback',
+        'api': 'https://192.168.2.216',
     },
     # 正式环境
     '0': {
         'enable': True,
-        # 'api': 'http://192.168.2.211:8080/api/scrapy/commodity/callback',
-        'api': 'https://192.168.2.216/api/scrapy/crontab_task/callback',
-        # 'api': 'http://192.168.2.61/api/scrapy/crontab_task/callback',
+        'api': 'https://192.168.2.216',
     },
 }
+
 
 PROXY_POOL = {
     'api': 'http://192.168.2.204:5010',
@@ -113,10 +135,12 @@ REMOTE_FILE = {
 
 # 巡查频率
 PATROL_FREQUENCY_CONFIG = {
-    'api': 'htpps://192.168.2.216'
+    'api': 'https://192.168.2.216'
 }
 
-# VPN 线路接口
+# 页面解析出错保存的页面路径
+SPIDER_PAGE_DIR = get_absolute_path('runtime/page')
+# VPN线路接口
 VPN_LINE_PROXY = {
     'user_authentication_api': 'http://192.168.2.216/api/vpn/auth/authByUserClient',
     'program_authentication_api': 'http://192.168.2.216/api/vpn/auth/authByOtherClient',
@@ -126,8 +150,8 @@ VPN_LINE_PROXY = {
     'get_vpn_api': 'http://192.168.2.216/api/vpn/networkLine/getVpn',
     'change_vpn_api': 'http://192.168.2.216/api/vpn/networkLine/switchVpn',
     'register_auth_api': 'http://192.168.2.216/api/vpn/auth/registerByOtherClient',
+    'startup_cleaning_api': 'http://192.168.2.216/api/vpn/networkLine/startupCleaning',
 }
-
 # 代理中台地址
 CENTRES = {
     'address': 'socks5://192.168.2.84',

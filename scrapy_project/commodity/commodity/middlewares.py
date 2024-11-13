@@ -4,6 +4,7 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 import logging
+import requests
 from tool.request.cookies.change_address import AmazonLocationSession
 from common.core.downloader.cookies import BaseCookiesMiddleware
 from common.exceptions.exception import RequestException, CookieException
@@ -174,7 +175,7 @@ class CommoditySocks5Middleware(HTTPDownloadHandler):
         headers_dict = {k.decode(): v[0].decode() if v else '' for k, v in request.headers.items()}
         proxies = request.meta.get('proxy')
         proxies = {'https': proxies, 'http': proxies}
-        response = request.get(request.url, headers=headers_dict, proxies=proxies)
+        response = requests.get(request.url, headers=headers_dict, proxies=proxies)
         response = ScrapyResponse(
             url=request.url,
             status=response.status_code,

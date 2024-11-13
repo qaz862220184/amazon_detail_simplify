@@ -51,8 +51,8 @@ class DetailSpider(CommoditySpiderBase):
         """
         return f"https://{self.get_country_site()}/dp/{self.asin}"
 
-    def execute_success_call(self):
-        pass
-
-    def execute_error_call(self, exception):
-        pass
+    # def execute_success_call(self):
+    #     pass
+    #
+    # def execute_error_call(self, exception):
+    #     pass

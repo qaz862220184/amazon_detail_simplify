@@ -430,7 +430,7 @@ class DropdownSpiderBase(SpiderBase, ABC):
 
 
 if __name__ == '__main__':
-    params = {"sub_task_id": "6611f0bbc0d5fb084e07d863", "task_id": "6611f0bbc0d5fb084e07d862", "time": 1704904975.7675}
+    params = {"sub_task_id": "67346b64d8b3a5dd950bd006", "task_id": "67346b64d8b3a5dd950bd005", "time": 1704904975.7675}
     sign = ApiSign.create_sign(params)
     params = dict(params, **{"sign": sign})
 

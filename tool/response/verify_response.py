@@ -69,7 +69,9 @@ class VerifyResponse:
         判断是否出现空白页面
         :return:
         """
-        if 'id="dp"' not in self.content.lower() and 'errors/validateCaptcha' not in self.content:
+        tree = etree.HTML(self.content)
+        address_info = tree.xpath('//*[@id="dp"]')
+        if not address_info and 'errors/validateCaptcha' not in self.content:
             return True
         return False
 

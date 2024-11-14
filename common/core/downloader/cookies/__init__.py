@@ -171,7 +171,7 @@ class BaseCookiesMiddleware(object):
         redis_key = self.domain + '_cookies'
         try:
             # 从redis服务器获取
-            res = Chcaed.get(redis_key, db='client')
+            res = Chcaed.get(redis_key)
             if not res:
                 res = {}
         except EOFError:
@@ -229,7 +229,7 @@ class BaseCookiesMiddleware(object):
         :return:
         """
         redis_key = self.domain + '_cookies'
-        return Chcaed.put(redis_key, cookies, db='client')
+        return Chcaed.put(redis_key, cookies)
 
     def _delete_cookies(self, cookies):
         """

@@ -113,12 +113,12 @@ CRAWL_RESULT_CALL_CONF = {
     # 测试环境
     '1': {
         'enable': True,
-        'api': 'https://192.168.2.216',
+        'api': 'https://192.168.2.216/api/scrapy/crontab_task/callback',
     },
     # 正式环境
     '0': {
         'enable': True,
-        'api': 'https://192.168.2.216',
+        'api': 'https://192.168.2.216/api/scrapy/crontab_task/callback',
     },
 }
 

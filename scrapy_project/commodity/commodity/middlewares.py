@@ -76,6 +76,7 @@ class CommodityCookiesMiddleware(BaseCookiesMiddleware):
                 proxies=proxies,
             )
             cookies = amazon.change_address()
+            request.meta.update({'cookies_jar': amazon})
             if not cookies:
                 raise CookieException('address is not change', error_type='address')
             self.send_cookies(
@@ -146,6 +147,10 @@ class CommodityRetryMiddleware(RetryMiddleware):
         # 判断地址是否存在 subtask_handle_data
         if verify_response.is_not_address(spider.subtask_handle_data.get('country_code'),
                                           spider.subtask_handle_data.get('zip_code')):
+            if 'cookies_jar' in request.meta:
+                request.meta['cookies_jar'].delete_cookies(
+                    cookies={}
+                )
             raise CookieException('The address is lose, proxy is {}'.format(request.meta['current']),
                                   error_type='address')
 

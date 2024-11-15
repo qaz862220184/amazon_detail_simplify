@@ -154,13 +154,15 @@ class BaseCookiesMiddleware(object):
         self.set_cookies(cookies)
         request.headers['cookie'] = cookies
 
-    def delete_cookies(self, cookies):
+    def delete_cookies(self, cookies, zip_code, network_line_id):
         """
         删除cookies
         :param cookies:
+        :param zip_code:
+        :param network_line_id:
         :return:
         """
-        self._delete_cookies(cookies)
+        self._delete_cookies(cookies, zip_code, network_line_id)
 
     def _get(self):
         """
@@ -231,10 +233,12 @@ class BaseCookiesMiddleware(object):
         redis_key = self.domain + '_cookies'
         return Chcaed.put(redis_key, cookies)
 
-    def _delete_cookies(self, cookies):
+    def _delete_cookies(self, cookies, zip_code, network_line_id):
         """
         删除cookies
         :param cookies:
+        :param zip_code:
+        :param network_line_id:
         :return:
         """
         # 加锁
@@ -243,11 +247,16 @@ class BaseCookiesMiddleware(object):
         )
         try:
             # 所有cookie
+            key_name = '_'.join(
+                [self.domain, network_line_id, zip_code]
+            )
             all_cookies = self._get()
-            all_cookies[self._get_key()] = cookies
+            all_cookies[key_name] = cookies
             # 保存cookie
             self.save(all_cookies)
         except:
+            import traceback
+            traceback.print_exc()
             pass
         finally:
             self.lock.release_lock(

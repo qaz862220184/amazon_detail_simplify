@@ -133,7 +133,18 @@ class CommodityRetryMiddleware(RetryMiddleware):
 
         if verify_response.is_dog_page() or verify_response.is_validate_captcha():
             # 出现狗页面 或者 出现验证码页面
-            raise RequestException(f'Trigger the anti-claw mechanism')
+            reason = 'browser error:' + verify_response.content
+            spider.add_exception(reason, 'request')
+            retry_request = self._retry(request, reason, spider)
+            if retry_request:
+                response = retry_request
+            else:
+                BaseCookiesMiddleware(self.settings).delete_cookies(
+                    cookies=None,
+                    zip_code=spider.subtask_handle_data.get('zip_code'),
+                    network_line_id=spider.network_line_id,
+                )
+                raise RequestException(f'Trigger the anti-claw mechanism')
 
         # 判断是否为listing不存在的页面
         if verify_response.is_not_listing():
@@ -147,10 +158,11 @@ class CommodityRetryMiddleware(RetryMiddleware):
         # 判断地址是否存在 subtask_handle_data
         if verify_response.is_not_address(spider.subtask_handle_data.get('country_code'),
                                           spider.subtask_handle_data.get('zip_code')):
-            if 'cookies_jar' in request.meta:
-                request.meta['cookies_jar'].delete_cookies(
-                    cookies={}
-                )
+            BaseCookiesMiddleware(self.settings).delete_cookies(
+                cookies=None,
+                zip_code=spider.subtask_handle_data.get('zip_code'),
+                network_line_id=spider.network_line_id,
+            )
             raise CookieException('The address is lose, proxy is {}'.format(request.meta['current']),
                                   error_type='address')
 

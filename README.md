@@ -7,12 +7,12 @@
 在开始之前，请确保你已经安装了以下环境依赖：
 
 - Python3.10
-- pyppeteer
 - scrapy
 - scrapyd
 - redis
 - supervisor
-- xorg
+- requests
+- pysocks
 
 ## 项目环境
 
@@ -25,7 +25,7 @@ mkdir -p /data/python/commodity
 2.进入项目目录并使用git拉取
 ```
 cd /data/python/commodity
-# git：http://192.168.2.19/kernel/amazon-crawl
+# git：http://192.168.2.19/kernel/crawl_simplify
 git pull
 ```
 3.安装python相关模块
@@ -34,14 +34,6 @@ git pull
 cd /data/python/commodity
 # 执行安装
 pip install -r requirements.txt
-```
-4.检查xorg是否有开机启动，若是有则关闭开机启动
-```
-systemctl disable lightdm
-或者
-systemctl disable gdm
-也可以修改启动参数指定 :10 启动（不推荐）
-/usr/lib/xorg/Xorg :10 -auth ~/.Xauthority -config /etc/X11/xrdp/xorg.conf -noreset -nolisten tcp -logfile .xorgxrdp.%s.log &
 ```
 5.运行前需要先注册服务用以绑定代理线路
 ```

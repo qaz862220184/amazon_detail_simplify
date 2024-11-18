@@ -55,7 +55,7 @@ class AmazonLocationSession(object):
     )
     csrf_token_endpoint = (
         "/portal-migration/hz/glow/get-rendered-address-selections?deviceType=desktop"
-        "&pageType=Search&storeContext=NoStoreName&actionSource=desktop-modal"
+        "&pageType=Gateway&storeContext=NoStoreName&actionSource=desktop-modal"
     )
     accpt_cookie_endpoint = (
         "/privacyprefs/retail/v1/acceptall"
@@ -337,8 +337,8 @@ class AmazonLocationSession(object):
 
 
 if __name__ == '__main__':
-    # amazon = AmazonLocationSession('JP', '160-0022', {'https': 'socks5h://192.168.2.84:7157'})
-    amazon = AmazonLocationSession('US', '10017', {'https': 'socks5h://192.168.2.84:7151'})
+    amazon = AmazonLocationSession('JP', '160-0022', {'https': 'socks5h://192.168.2.84:7157'})
+    # amazon = AmazonLocationSession('US', '10017', {'https': 'socks5h://192.168.2.84:7151'})
     cookies = amazon.change_address()
     print('-' * 200)
     print(cookies)

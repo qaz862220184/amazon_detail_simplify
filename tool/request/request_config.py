@@ -149,8 +149,8 @@ class RequestHeaders:
         default_header = self.DEFAULT_HEADERS.copy()
         # ua头部信息
         ua_header = {
-            'sec-ch-ua': self.get_user_agent().get_se_user_agent(),
-            'sec-ch-ua-platform': self.get_user_agent().get_se_platform(),
+            # 'sec-ch-ua': self.get_user_agent().get_se_user_agent(),
+            # 'sec-ch-ua-platform': self.get_user_agent().get_se_platform(),
             'user-agent': self.get_user_agent().user_agent,
         }
         # 指定的头部信息

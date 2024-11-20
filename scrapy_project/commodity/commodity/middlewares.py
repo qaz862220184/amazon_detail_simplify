@@ -141,6 +141,7 @@ class CommodityRetryMiddleware(RetryMiddleware):
             else:
                 BaseCookiesMiddleware(self.settings).delete_cookies(
                     cookies=None,
+                    domain=spider.get_country_site(),
                     zip_code=spider.subtask_handle_data.get('zip_code'),
                     network_line_id=spider.network_line_id,
                 )
@@ -160,6 +161,7 @@ class CommodityRetryMiddleware(RetryMiddleware):
                                           spider.subtask_handle_data.get('zip_code')):
             BaseCookiesMiddleware(self.settings).delete_cookies(
                 cookies=None,
+                domain=spider.get_country_site(),
                 zip_code=spider.subtask_handle_data.get('zip_code'),
                 network_line_id=spider.network_line_id,
             )

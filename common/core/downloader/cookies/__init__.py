@@ -1,4 +1,4 @@
-
+import traceback
 from common.core.downloader.cookies.downloadermiddlewares.cookies import (
     CookiesMiddleware,
     get_request_cookies
@@ -7,6 +7,8 @@ from scrapy.exceptions import NotConfigured
 from common.utils.distribution_lock import RedisLock
 from common.utils.cache import Chcaed
 from common.utils.sundry_utils import UrlParse
+import logging
+logger = logging.getLogger()
 
 
 class ScrapyCookiesMiddleware(CookiesMiddleware):
@@ -154,15 +156,16 @@ class BaseCookiesMiddleware(object):
         self.set_cookies(cookies)
         request.headers['cookie'] = cookies
 
-    def delete_cookies(self, cookies, zip_code, network_line_id):
+    def delete_cookies(self, cookies, domain, zip_code, network_line_id):
         """
         删除cookies
         :param cookies:
+        :param domain:
         :param zip_code:
         :param network_line_id:
         :return:
         """
-        self._delete_cookies(cookies, zip_code, network_line_id)
+        self._delete_cookies(cookies, domain, zip_code, network_line_id)
 
     def _get(self):
         """
@@ -233,10 +236,11 @@ class BaseCookiesMiddleware(object):
         redis_key = self.domain + '_cookies'
         return Chcaed.put(redis_key, cookies)
 
-    def _delete_cookies(self, cookies, zip_code, network_line_id):
+    def _delete_cookies(self, cookies, domain, zip_code, network_line_id):
         """
         删除cookies
         :param cookies:
+        :param domain:
         :param zip_code:
         :param network_line_id:
         :return:
@@ -246,18 +250,28 @@ class BaseCookiesMiddleware(object):
             acquire_timeout=self.lock_time
         )
         try:
+            logger.error('*'*200)
+            logger.error({
+                'domain': domain,
+                'network_line_id': network_line_id,
+                'zip_code': zip_code
+            })
+            self.domain = domain
             # 所有cookie
             key_name = '_'.join(
-                [self.domain, network_line_id, zip_code]
+                [domain, str(network_line_id), zip_code]
             )
+            logger.error(key_name)
             all_cookies = self._get()
+            logger.error(self._get())
             all_cookies[key_name] = cookies
             # 保存cookie
             self.save(all_cookies)
         except:
-            import traceback
-            traceback.print_exc()
-            pass
+
+            error = traceback.format_exc()
+            logger.error('#'*200)
+            logger.error(error)
         finally:
             self.lock.release_lock(
                 identifier=identifier

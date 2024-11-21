@@ -197,7 +197,7 @@ class CommoditySocks5Middleware(HTTPDownloadHandler):
         proxies = request.meta.get('proxies')
         proxies = {'https': proxies, 'http': proxies}
         logger.error(f'socks5 proxy is {proxies}')
-        response = requests.get(request.url, headers=headers_dict, proxies=proxies)
+        response = requests.get(request.url, headers=headers_dict, proxies=proxies, timeout=30)
         logger.error('*'*200)
         logger.error(request.url)
         logger.error(headers_dict)

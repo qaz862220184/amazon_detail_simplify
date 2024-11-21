@@ -4,6 +4,8 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 import logging
+import random
+
 import requests
 from tool.request.cookies.change_address import AmazonLocationSession
 from common.core.downloader.cookies import BaseCookiesMiddleware
@@ -102,6 +104,11 @@ class CommodityHeadersMiddleware(object):
         request.headers.update({'sec-fetch-site': 'none'})
         request.headers.update({'sec-fetch-user': '?1'})
         request.headers.update({'upgrade-insecure-requests': '1'})
+        # 添加网络连接情况试一下
+        request.headers.update({'downlink': random.randint(5, 20)})
+        request.headers.update({'rtt': random.randint(50, 300)})
+        request.headers.update({'ect': '4g'})
+        request.headers.update({'Connection': 'keep-alive'})
         # 这里改成使用随机的ua
         request.headers.update({'user-agent': ua.chrome})
         logger.debug('Commodity.middlewares.CommodityHeadersMiddleware is done!!!')
@@ -187,9 +194,14 @@ class CommoditySocks5Middleware(HTTPDownloadHandler):
     """
     def process_request(self, request, spider):
         headers_dict = {k.decode(): v[0].decode() if v else '' for k, v in request.headers.items()}
-        proxies = request.meta.get('proxy')
+        proxies = request.meta.get('proxies')
         proxies = {'https': proxies, 'http': proxies}
+        logger.error(f'socks5 proxy is {proxies}')
         response = requests.get(request.url, headers=headers_dict, proxies=proxies)
+        logger.error('*'*200)
+        logger.error(request.url)
+        logger.error(headers_dict)
+        logger.error(proxies)
         response = ScrapyResponse(
             url=request.url,
             status=response.status_code,

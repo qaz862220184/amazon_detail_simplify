@@ -1,7 +1,10 @@
 # -*- coding: UTF-8 -*-
+import functools
 import re
 import random
 import json
+import time
+import subprocess
 import requests
 import urllib3
 import sys
@@ -16,6 +19,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
 from tool.request.request_config import RequestParam
 from tool.request.validate.captcha import ValidateCaptcha
+from scrapy.http import HtmlResponse
+from requests.cookies import RequestsCookieJar
 
 """
 指纹标识
@@ -24,6 +29,29 @@ ORIGIN_CIPHERS = (
     'ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:RSA+3DES:!aNULL:'
     '!eNULL:!MD5'
 )
+
+
+def retry(max_retries=3, delay=1):
+    """
+    装饰器：在函数抛出异常时进行重试。
+    :param max_retries: 最大重试次数
+    :param delay: 每次重试之间的延迟时间（秒）
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    # 尝试执行原函数
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        print(f'change address is error!!! current is {attempt}')
+                        time.sleep(delay)
+                    else:
+                        raise e
+        return wrapper
+    return decorator
 
 
 class DESAdapter(HTTPAdapter):
@@ -73,6 +101,7 @@ class AmazonLocationSession(object):
             platform=1,
         )
 
+    @retry(max_retries=3, delay=1)
     def change_address(self, to_string=True):
         """
         Make start request to main Amazon country page.
@@ -100,6 +129,7 @@ class AmazonLocationSession(object):
 
         # 解析和获取csrf-token
         csrf_token = self.parse_csrf_token(response)
+        print({'csrf-token': csrf_token})
         # 接收cookie， 欧洲国家需要
         self.accept_cookie(response)
         # 设置邮编
@@ -181,7 +211,51 @@ class AmazonLocationSession(object):
             self._update_cookie(response)
             return True
         else:
-            return False
+            # TODO: session 请求失败的话，使用curl尝试一下
+            curl_command = [
+                "curl", "-X", "POST",
+                f"{base_url}{self.address_change_endpoint}",
+                "-d", json.dumps(payload),
+                "-i",
+                "--insecure"  # 跳过 SSL 验证
+            ]
+            # 添加 headers
+            for key, value in headers.items():
+                curl_command.extend(["-H", f"{key}: {value}"])
+
+            # 添加 cookies
+            if self._get_cookie():
+                cookie_string = "; ".join([f"{key}={value}" for key, value in self._get_cookie().items()])
+                curl_command.extend(["--cookie", cookie_string])
+
+            # 添加代理
+            if self.proxies:
+                curl_command.extend(["--proxy", self.proxies['http']])
+
+            # 执行 curl 命令
+            result = subprocess.run(curl_command, capture_output=True, text=True, encoding='latin1')
+            curl_cookies = re.findall(r'set-cookie: (.*?);', result.stdout)
+            cookie_jar = RequestsCookieJar()
+            if curl_cookies:
+                for cookie in curl_cookies:
+                    key, value = cookie.split("=", 1)  # 以等号分隔，最多分割一次
+                    cookie_jar.set(key, value)
+
+            # 写入某些数据
+            response = HtmlResponse(
+                f"{base_url}{self.csrf_token_endpoint}",
+                status=200,
+                headers=headers,
+                body=result.stdout,
+                encoding='utf-8',
+            )
+            if 'isValidAddress' in response.text:
+                # 成功
+                response.cookies = cookie_jar
+                self._update_cookie(response)
+                return True
+            else:
+                return False
 
     def parse_csrf_token(self, response):
         """
@@ -195,9 +269,16 @@ class AmazonLocationSession(object):
             headers = self.headers
             headers = {
                 **headers,
+                'accept': 'text/html,*/*',
                 'anti-csrftoken-a2z': self._get_ajax_token(response=response),
             }
-            response2 = self.session.get(
+            print({
+                'url': base_url + self.csrf_token_endpoint,
+                'headers': headers,
+                'cookies': self._get_cookie(),
+                'proxies': self.proxies,
+            })
+            response2 = requests.get(
                 url=base_url + self.csrf_token_endpoint,
                 headers=headers,
                 cookies=self._get_cookie(),
@@ -212,6 +293,58 @@ class AmazonLocationSession(object):
             csrf_token = self._get_csrf_token(response=response2)
             if csrf_token:
                 return csrf_token
+
+        # TODO: session 请求失败的话可以试一下使用curl请求
+        base_url = self.get_base_url()
+        headers = self.headers
+        headers = {
+            **headers,
+            'Content-Type': 'text/html',
+            'Content': 'text/html,*/*',
+            'anti-csrftoken-a2z': self._get_ajax_token(response=response),
+        }
+        curl_command = [
+            "curl", "-X", "GET",
+            f"{base_url}{self.csrf_token_endpoint}",
+            "-i",
+            "--compressed",
+            "--insecure"  # 跳过 SSL 验证
+        ]
+        # 添加 headers
+        for key, value in headers.items():
+            curl_command.extend(["-H", f"{key}: {value}"])
+
+        # 添加 cookies
+        if self._get_cookie():
+            cookie_string = "; ".join([f"{key}={value}" for key, value in self._get_cookie().items()])
+            curl_command.extend(["--cookie", cookie_string])
+
+        # 添加代理
+        if self.proxies:
+            curl_command.extend(["--proxy", self.proxies['http']])
+
+        # 执行 curl 命令
+        result = subprocess.run(curl_command, capture_output=True, text=True, encoding='latin1')
+        curl_cookies = re.findall(r'set-cookie: (.*?);', result.stdout)
+        cookie_jar = RequestsCookieJar()
+        if curl_cookies:
+            for cookie in curl_cookies:
+                key, value = cookie.split("=", 1)  # 以等号分隔，最多分割一次
+                cookie_jar.set(key, value)
+        response2 = HtmlResponse(
+            f"{base_url}{self.csrf_token_endpoint}",
+            status=200,
+            headers=headers,
+            body=result.stdout,
+            encoding='utf-8',
+        )
+        response2.cookies = cookie_jar
+        self._update_cookie(response2)
+
+        csrf_token = self._get_csrf_token(response=response2)
+        if csrf_token:
+            return csrf_token
+
         raise ValueError('CSRF token not found')
 
     def get_base_url(self):
@@ -337,8 +470,12 @@ class AmazonLocationSession(object):
 
 
 if __name__ == '__main__':
-    amazon = AmazonLocationSession('JP', '160-0022', {'https': 'socks5h://192.168.2.84:7157'})
-    # amazon = AmazonLocationSession('US', '10017', {'https': 'socks5h://192.168.2.84:7151'})
+    amazon = AmazonLocationSession('JP', '160-0022', {'http': 'socks5h://192.168.2.84:7157'})
+    # amazon = AmazonLocationSession('US', '10017', {'http': 'socks5h://192.168.2.84:7151'})
+    # amazon = AmazonLocationSession('DE', '10115', {'http': 'socks5h://192.168.2.84:7165'})
+    # amazon = AmazonLocationSession('FR', '75015', {'http': 'socks5h://192.168.2.84:7164'})
+    # amazon = AmazonLocationSession('GB', 'WC1N 3AX', {'http': 'socks5h://192.168.2.84:7163'})
+
     cookies = amazon.change_address()
     print('-' * 200)
     print(cookies)

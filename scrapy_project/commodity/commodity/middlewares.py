@@ -13,11 +13,9 @@ from common.exceptions.exception import RequestException, CookieException
 from common.core.downloader.headers.request_headers import RefererParam
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
 from tool.response.verify_response import VerifyResponse
-from common.base.scrapy_base import CommoditySpiderBase
 from scrapy.utils.project import get_project_settings
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.http import TextResponse as ScrapyResponse
-from tool.request.proxys.vps_proxies import VpsProxiesTactic
 from fake_useragent import UserAgent
 
 logger = logging.getLogger()
@@ -33,23 +31,12 @@ class CommodityProxyMiddleware(object):
         self.network_business_id = settings['BUSINESS_ID']
 
     def process_request(self, request, spider):
-        country_code = spider.subtask_handle_data.get('country_code')
-        area_type = spider.subtask_handle_data.get('area_type')
-
-        # 获取得到线路id
-        result = VpsProxiesTactic.change_vpn_line(self.network_business_id, country_code, area_type)
-        network_line_id = result.get('network_line_id')
-        spider.network_line_id = network_line_id
-        request.meta.update({"network_line_id": network_line_id})
-        uuid = result.get('uuid')
-        spider.uuid = uuid
         # cookie 使用线路id和邮编进行区分
-        zip_code = spider.subtask_handle_data.get('zip_code')
-        cookie_name = str(network_line_id) + '_' + str(zip_code)
+        zip_code = spider.zip_code
+        cookie_name = 'amazon_detail' + '_' + str(zip_code)
         request.meta.update({"current": cookie_name})
-        # TODO 在这里调用请求端口的方法
-        proxies = VpsProxiesTactic.get_line_proxies(network_line_id)
-        request.meta.update({"proxies": proxies})
+        # 代理设置
+        request.meta.update({"proxies": 'socks5://localhost:1001'})
 
 
 class CommodityRefererMiddleware(object):
@@ -58,8 +45,8 @@ class CommodityRefererMiddleware(object):
     """
     def process_request(self, request, spider):
         logger.debug('advertising.middlewares.AdvertisingRefererMiddleware is start!!!')
-        country = spider.subtask_handle_data.get('country_code')
-        keyword = spider.subtask_handle_data.get('asin')
+        country = spider.country_code
+        keyword = spider.asin
         referer = RefererParam.get_referer(country, keyword)
         request.meta.update({'referer': referer})
         logger.debug('advertising.middlewares.AdvertisingRefererMiddleware is done!!!')
@@ -69,22 +56,21 @@ class CommodityCookiesMiddleware(BaseCookiesMiddleware):
 
     def init_cookies(self, request, spider):
         print('commodity.middlewares.CommodityCookiesMiddleware is start!!!')
-        if isinstance(spider, CommoditySpiderBase):
-            proxies = request.meta.get('proxies')
-            proxies = {'http': proxies}
-            amazon = AmazonLocationSession(
-                country=spider.subtask_handle_data.get('country_code'),
-                zip_code=spider.subtask_handle_data.get('zip_code'),
-                proxies=proxies,
-            )
-            cookies = amazon.change_address()
-            request.meta.update({'cookies_jar': amazon})
-            if not cookies:
-                raise CookieException('address is not change', error_type='address')
-            self.send_cookies(
-                cookies=cookies,
-                request=request
-            )
+        proxies = request.meta.get('proxies')
+        proxies = {'http': proxies}
+        amazon = AmazonLocationSession(
+            country=spider.country_code,
+            zip_code=spider.zip_code,
+            proxies=proxies,
+        )
+        cookies = amazon.change_address()
+        request.meta.update({'cookies_jar': amazon})
+        if not cookies:
+            raise CookieException('address is not change', error_type='address')
+        self.send_cookies(
+            cookies=cookies,
+            request=request
+        )
         print('commodity.middlewares.CommodityCookiesMiddleware is done!!!')
 
 
@@ -192,6 +178,7 @@ class CommoditySocks5Middleware(HTTPDownloadHandler):
     """
     将请求代理改成使用socks5
     """
+    # 如果代理使用的是socks代理的话可以使用这个中间件转化
     def process_request(self, request, spider):
         headers_dict = {k.decode(): v[0].decode() if v else '' for k, v in request.headers.items()}
         proxies = request.meta.get('proxies')

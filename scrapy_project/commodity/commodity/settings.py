@@ -106,18 +106,3 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
-# Set settings whose default value is deprecated to a future-proof value
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-FEED_EXPORT_ENCODING = "utf-8"
-
-# 注册授权用户
-from common.utils.jhvps.vpn_proxy_api import AuthAccount, VpsLineInit
-AuthAccount().do_auth_account()
-# 初始化vps线路
-BUSINESS_ID = 1
-COUNTRY = None
-VpsLineInit.line_init(
-    business_id=BUSINESS_ID,
-    country=COUNTRY,
-)

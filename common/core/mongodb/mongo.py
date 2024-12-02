@@ -249,12 +249,3 @@ class Query:
     #
     # def close(self):
     #     self.conn.close()
-
-
-if __name__ == '__main__':
-
-    # data = MongoDb.get_sub_tables(table='scrapy_sub_task', cycle=SubMeterQuery.CYCLE_YEARLY, along_day=0)
-    # data = MongoDb.sub_table(table='scrapy_sub_task', cycle=SubMeterQuery.CYCLE_YEARLY)
-    # print(data)
-    data = MongoDb.sub_table_by_days(table='scrapy_sub_task', cycle=SubMeterQuery.CYCLE_DAILY)
-    print(data)

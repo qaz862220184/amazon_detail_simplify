@@ -1,8 +1,5 @@
 import hashlib
 import base64
-import json
-from collections.abc import Iterable
-from common.settings import API_CONF
 
 
 class Md5Encrytion:
@@ -81,45 +78,3 @@ class Base64Encrytion:
         if not res:
             return res
         return base64.b64decode(res).decode('ascii')
-
-
-class ApiSign:
-    API_KEY = API_CONF['apikey']
-
-    @classmethod
-    def ver_sign(cls, params: dict) -> bool:
-        """
-        验证签名
-        :param params:
-        :return:
-        """
-        if 'sign' not in params:
-            return False
-        sign = params['sign']
-        del params['sign']
-        if sign == cls.create_sign(params):
-            return True
-        else:
-            return False
-
-    @classmethod
-    def create_sign(cls, params: dict):
-        """
-        生成api秘钥
-        :param params:
-        :return:
-        """
-        arr = []
-        for tup in sorted(params.items(), key=lambda params: params[0]):
-            name, value = tup
-            if isinstance(value, Iterable) and not isinstance(value, str):
-                value = Base64Encrytion.encode(json.dumps(value, separators=(',', ':'), ensure_ascii=False))
-            if value is None:
-                value = ''
-            arr.append(f"{name}={value}")
-        signstr = "&".join(arr) + '&api_key=' + cls.API_KEY
-        return Md5Encrytion.md5_lower32(signstr)
-
-    @classmethod
-    def set_api_key(cls, api_key):
-        cls.API_KEY = api_key

@@ -324,14 +324,7 @@ class AmazonLocationSession:
 
 
 if __name__ == '__main__':
-    amazon = AmazonLocationSession('JP', '160-0022', {'https': 'socks5h://192.168.2.84:7157'})
-    # amazon = AmazonLocationSession('US', '10017', {'https': 'socks5h://192.168.2.84:7151'})
+    amazon = AmazonLocationSession('JP', '160-0022', {'https': 'socks5h://localhost:7157'})
     cookies = amazon.change_address()
     print('-' * 200)
     print(cookies)
-
-    # headers = RequestParam.get_headers(
-    #     request_url='https://www.amazon.com',
-    #     platform=1
-    # )
-    # print(headers)

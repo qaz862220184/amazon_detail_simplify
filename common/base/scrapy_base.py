@@ -15,7 +15,6 @@ from tool.config import Config
 from datetime import datetime
 # 新方法
 from tool.request.proxys.vps_proxies import VpsProxiesTactic
-from gerapy_pyppeteer import PyppeteerRequest
 
 
 class SpiderBase(Spider, ABC):
@@ -292,27 +291,6 @@ class SpiderBase(Spider, ABC):
             failure.raiseException()
         except Exception as exception:
             self.add_exception(exception)
-
-    def http_get(self, url, params, **options):
-        """
-        get请求
-        :param url:
-        :param params:
-        :param options:
-        :return:
-        """
-        # 请求地址解析
-        if not url or '://' not in url:
-            # 抛出异常
-            raise ValueError('The request url format is incorrect')
-        # 请求参数解析
-        if params:
-            url = f'{url}?{urlencode(params)}'
-        # 请求方式
-        options['method'] = 'GET'
-        if 'errback' not in options:
-            options['errback'] = self.errback
-        return PyppeteerRequest(url, **options)
 
     def form_request(self, url, params, **options):
         """

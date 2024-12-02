@@ -408,12 +408,3 @@ class RequestParam:
                 headers['host'] = domain
 
         return headers
-
-
-if __name__ == '__main__':
-    import json
-    res = json.dumps(RequestParam.get_headers(
-        request_url='https://www.baidu.com',
-        cookies={'name': 'Mr Ye', 'age': 18, 'token': 'abcdef'}
-    ), sort_keys=True, indent=4, separators=(',', ':'))
-    print(res)

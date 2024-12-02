@@ -5,8 +5,8 @@ from common.helpers import get_absolute_path
 DB_MYSQL_CONF = {
    "default": {
        "host": "localhost",
-       "user": "root",  # networkline
-       "passwd": "root",  # btV3%^ts
+       "user": "root",
+       "passwd": "",
        "db": "amz_",
        "charset": "utf8mb4",
        "port": 3306,  # 58699
